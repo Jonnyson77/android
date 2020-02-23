@@ -1,0 +1,25 @@
+intent action大全： 
+
+
+
+ACTION_MAIN                         作为一个主要的进入口，而并不期望去接受数据 
+ACTION_VIEW                         向用户去显示数据 
+ACTION_ATTACH_DATA                  用于指定一些数据应该附属于一些其他的地方，例如，图片数据应该附属于联系人 
+ACTION_EDIT                         访问已给的数据，提供明确的可编辑 
+ACTION_PICK                         从数据中选择一个子项目，并返回你所选中的项目 
+ACTION_CHOOSER                      显示一个activity选择器，允许用户在进程之前选择他们想要的 
+ACTION_GET_CONTENT                  允许用户选择特殊种类的数据，并返回（特殊种类的数据：照一张相片或录一段音） 
+ACTION_DIAL                         拨打一个指定的号码，显示一个带有号码的用户界面，允许用户去启动呼叫 
+ACTION_CALL                         根据指定的数据执行一次呼叫（ACTION_CALL在应用中启动一次呼叫有缺陷，多数应用ACTION_DIAL，ACTION_CALL不能用在紧急呼叫上，紧急呼叫可以用ACTION_DIAL来实现） 
+ACTION_SEND                         传递数据，被传送的数据没有指定，接收的action请求用户发数据 
+ACTION_SENDTO                       发送一跳信息到指定的某人 
+ACTION_ANSWER                       处理一个打进电话呼叫 
+ACTION_INSERT                       插入一条空项目到已给的容器 
+ACTION_DELETE                       从容器中删除已给的数据 
+ACTION_RUN                          运行数据，无论怎么 
+ACTION_SYNC                         同步执行一个数据 
+ACTION_PICK_ACTIVITY                为已知的Intent选择一个Activity，返回选中的类 
+ACTION_SEARCH                       执行一次搜索 
+ACTION_WEB_SEARCH                   执行一次web搜索 
+ACTION_FACTORY_TEST                 工场测试的主要进入点， 
+ 
