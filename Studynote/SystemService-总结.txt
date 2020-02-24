@@ -1,0 +1,140 @@
+System Service实现流程
+
+
+从上面的分析，我们可以总结出Vibrator服务的整个实现流程：
+
+1.定义一个抽象类Vibrator，定义了应用中可以访问的一些抽象方法
+         frameworks/base/core/java/android/os/Vibrator.java
+2.定义具体的类SystemVibrator继承Vibrator，实现抽象方法
+      frameworks/base/core/java/android/os/SystemVibrator.java
+3，定义一个AIDL接口文件IVibratorService，定义系统服务接口
+      frameworks/base/core/java/android/os/IVibratorService.aidl
+4.定义服务VibratorService，实现IVibratorService定义的接口
+     frameworks/base/services/java/com/android/server/VibratorService.java
+
+     public class VibratorService extends IVibratorService.Stub
+
+5.将VibratorServicey添加到系统服务
+      frameworks/base/services/java/com/android/server/SystemServer.java
+
+       VibratorService vibrator = null;
+     ...
+       //实例化VibratorService并添加到ServiceManager
+      Slog.i(TAG, "Vibrator Service");
+      vibrator = new VibratorService(context);
+      ServiceManager.addService("vibrator", vibrator);
+       ...
+       //通知服务系统启动完成
+     try {
+		vibrator.systemReady();
+	} catch (Throwable e) {
+		reportWtf("making Vibrator Service ready", e);
+    }
+
+6.在SystemVibrator中通过IVibratorService的代理连接到VibratorService，这样SystemVibrator的接口实现里就可以调用IVibratorService的接口：
+		frameworks/base/core/java/android/os/SystemVibrator.java
+
+	private final IVibratorService mService;
+	...
+	public SystemVibrator() {
+    ...
+    mService = IVibratorService.Stub.asInterface(
+            ServiceManager.getService("vibrator"));
+    ...
+    public boolean hasVibrator() {
+        ...
+        try {
+            return mService.hasVibrator();
+        } catch (RemoteException e) {
+        }
+        ...
+		}
+	}
+7.在Context里定义一个代表Vibrator服务的字符串
+	frameworks/base/core/java/android/content/Context.java
+
+	public static final String VIBRATOR_SERVICE = "vibrator";
+
+8.在ContextImpl里添加SystemVibrator的实例化过程
+	frameworks/base/core/java/android/app/ContextImpl.java
+
+	registerService(VIBRATOR_SERVICE, new ServiceFetcher() {
+	public Object createService(ContextImpl ctx) {
+		return new SystemVibrator(ctx);
+	}});  
+
+9.在应用中使用Vibrator的接口
+
+	Vibrator mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+	mVibrator.vibrate(500);
+
+10.为保证编译正常，还需要将AIDL文件添加到编译配置里
+	frameworks/base/Android.mk
+
+	LOCAL_SRC_FILES += \
+	...
+	core/java/android/os/IVibratorService.aidl \
+
+System Service 新加接口
+如果我们需要实现一个新的系统服务，就可以按照上面的步骤在系统中扩展出一个新的服务，并给应用层提供出使用接口。
+
+1.注意防止阻塞
+应用层访问系统服务提供的接口时会有两种情况：
+
+	一种是应用调用端需要等待服务实现端处理完成，返回处理结果，这样如果服务端发生阻塞，那么应用端也会发生阻塞，因此在实现服务端的实现时要注意不要发生阻塞。
+	另一种是调用端不需要等待服务端返回结果，调用完成后直接返回void，这样服务端发生阻塞不会影响到应用端，这样的单向的接口在AIDL里定义时需要添加oneway关键字，如：
+
+	oneway interface ILocationListener
+	{
+		void onLocationChanged(in Location location);
+		...
+	}
+	
+	
+2. 注意多线程访问
+
+
+每个系统服务在系统进程中只有一个实例，而且应用中系统服务的代理也是单例的，而且应用端的访问，在系统进程都是使用独立的线程进行响应，
+所以访问同一个系统服务的接口时必然会出现多个线程或者多个进程同时访问的情况。为保证系统服务的线程安全，
+需要对系统服务的进程进行多线程访问的保护，目前主要有两种实现线程安全的方法：
+
+一种是通过同步锁机制，锁住一个对象实例（一般是这个服务对象本身），这样这个服务同一时间只能响应一个访问请求，如LocationManagerService里：
+public boolean callStatusChangedLocked(...) {
+    ...
+    synchronized (this) {
+    ...
+    }
+
+另一种方法就是使用Handler机制，这种服务一般会创建一个单独的线程，当有应用端访问请求到来时会向服务线程的Handler里发送一个Message，
+利用单线程顺序执行的特性，保证所有的访问都按顺序进行处理，但这种方法只适合单向的访问，不适合需要返回的双向访问。
+
+
+
+
+
+
+
+==========================
+
+
+
+
+如果想在Vibrator里添加一个新的接口，需要下面3步：
+
+在IVibratorService添加接口；
+在VibratorService添加接口的实现；
+在Vibrator及SystemVibrator里扩展新的接口；
+这样应用中就可以使用Vibrator的新接口了。
+————————————————
+
+
+
+
+应用层与 System Service 通信:
+
+方法一：使用Broadcast
+
+
+方法二：使用AIDL:让应用端实现AIDL接口，系统服务端使用代理调用应用端的接口
+
+
