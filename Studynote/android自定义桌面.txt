@@ -1,0 +1,45 @@
+
+1. android自定义桌面其实就是一个launcher，然后在相应的activity中把系统中的所有APK加载进来，显示相应的icon图标
+
+
+
+
+2.开发自定义桌面需要用到以下几个类: 
+	1，ComponentName：组件名称，通常用来打开其他应用程序中的Activity或服务。,
+	2，PackageInfo：包含了一些信息的基类，它的直接子类有：ApplicationInfo、ComponentInfo、InstrumentationInfo、PermissionGroupInfo、PermissionInfo。它的间接子类有：			ActivityInfo、ProviderInfo、ServiceInfo。这个类包含的信息对于所有包中项目是平等的。这些Package items是被Package manager所持有的，这个类提供了属性的非常普通的基本设		置。通过 PackageInfo 获取具体信息方法：
+   		包名获取方法：packageInfo.packageName
+  		icon获取获取方法：packageManager.getApplicationIcon(applicationInfo)
+  	  	应用名称获取方法：packageManager.getApplicationLabel(applicationInfo)
+    		使用权限获取方法：packageManager.getPackageInfo(packageName,PackageManager.GET_PERMISSIONS).requestedPermissions
+	3，ResolveInfo：这个类是通过解析一个与IntentFilter相对应的intent得到的信息。它部分地对应于从AndroidManifest.xml的<intent>标签收集到的信息。通过 ResolveInfo 获取			具体信息方法：
+    		包名获取方法：resolve.activityInfo.packageName
+    		icon获取获取方法：resolve.loadIcon(packageManager)
+    		应用名称获取方法：resolve.loadLabel(packageManager).toString()
+	4，PackageManger ： 获得已安装的应用程序信息，常用方法： 
+   		 public abstract PackageManager getPackageManager()  //功能：获得一个PackageManger对象  
+    		public abstract Drawable getApplicationIcon(String packageName) //参数： packageName 包名,功能：返回给定包名的图标，否则返回null
+    		public abstract ApplicationInfo   getApplicationInfo(String packageName, int flags) //参数：packagename 包名 flags 该ApplicationInfo是此flags标记，通		常可以直接赋予常数0即可,功能：返回该ApplicationInfo对象
+   		public abstract List<ApplicationInfo>  getInstalledApplications(int flags) //参数：flag为一般为GET_UNINSTALLED_PACKAGES，那么此时会返回所有				ApplicationInfo。我们可以对ApplicationInfo的flags过滤,得到我们需要的。功能：返回给定条件的所有PackageInfo
+    		public abstract List<PackageInfo>  getInstalledPackages(int flags) //参数如上,功能：返回给定条件的所有PackageInfo
+
+3. manifest设置：
+		<category android:name="android.intent.category.HOME" />
+		<category android:name="android.intent.category.DEFAULT" />
+		系统启动后，ActivityManagerService会寻找系统中的"android.intent.category.HOME"，然后进行加载，如果"android.intent.category.HOME"有多个，则会让其进行选择
+
+
+4. 替换Android默认桌面Launcher三种方案
+
+用代码设置系统配置，保留两个Launcher应用进行动态切换
+
+动态删除添加系统默认/system/priv-app/目录下的默认Launcher.apk文件
+
+不设置Launcher，通过获取系统底层对Activity状态的监控，拦截Launcher
+
+前三种方案都需要系统权限，并在AndroidManifest.xml 中配置Launcher属性
+
+系统权限，配置shareUserId，并且用系统签名文件（platform）进行签名
+
+
+
+
